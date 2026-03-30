@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 class DbBook {
   static final DbBook _instance = DbBook._internal();
   static Database? _database;
+  static bool _isInitializing = false;
 
   // --- WEB IN-MEMORY DATABASE (FALLBACK) ---
   static final List<Map<String, dynamic>> _webCategories = [
@@ -58,7 +59,18 @@ class DbBook {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
+    
+    // Cegah balapan sinkronisasi (Race Condition) saat aplikasi baru pertama kali buka
+    while (_isInitializing) {
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
+    
+    if (_database != null) return _database!;
+
+    _isInitializing = true;
     _database = await _initDatabase();
+    _isInitializing = false;
+    
     return _database!;
   }
 

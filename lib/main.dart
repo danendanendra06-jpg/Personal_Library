@@ -5,6 +5,7 @@ import 'blocs/book_management/book_form_bloc.dart';
 import 'screens/home/book_list_page.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
