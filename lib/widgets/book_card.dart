@@ -34,13 +34,12 @@ class BookCard extends StatelessWidget {
     return Container(
       width: 140,
       margin: const EdgeInsets.only(right: 16),
-      child: Stack(
-        children: [
-          // Background Cover Image
-          InkWell(
-            onTap: onView,
-            borderRadius: BorderRadius.circular(16),
-            child: Ink(
+      child: RepaintBoundary(
+        child: Stack(
+          children: [
+          // Background Cover Image (Standard Container to prevent Ink bleed)
+          Positioned.fill(
+            child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 image: hasCover
@@ -60,6 +59,17 @@ class BookCard extends StatelessWidget {
                     offset: const Offset(0, 5),
                   ),
                 ],
+              ),
+            ),
+          ),
+          
+          // Ripple Effect Overlay
+          Positioned.fill(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: onView,
               ),
             ),
           ),
@@ -160,6 +170,7 @@ class BookCard extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }

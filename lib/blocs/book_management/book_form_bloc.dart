@@ -77,7 +77,7 @@ class BookFormBloc extends Bloc<BookFormEvent, BookFormState> {
           final auths = await dbBook.getAuthors();
           emit(BookFormDataLoaded(categories: cats, publishers: pubs, authors: auths));
        } catch (e) {
-          emit(BookFormError('Gagal memuat dropdown: \${e.toString()}'));
+          emit(BookFormError('Gagal memuat dropdown: ${e.toString()}'));
        }
     });
 
@@ -91,7 +91,7 @@ class BookFormBloc extends Bloc<BookFormEvent, BookFormState> {
           }
           emit(BookFormSuccess());
        } catch (e) {
-          emit(BookFormError('Gagal menyimpan buku: \${e.toString()}'));
+          emit(BookFormError('Gagal menyimpan buku: ${e.toString()}'));
        }
     });
   }

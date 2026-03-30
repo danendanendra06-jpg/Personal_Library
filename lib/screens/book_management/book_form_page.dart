@@ -369,7 +369,7 @@ class _BookFormPageState extends State<BookFormPage> {
             },
           );
           if (date != null) {
-            controller.text = "\${date.year}-\${date.month.toString().padLeft(2, '0')}-\${date.day.toString().padLeft(2, '0')}";
+            controller.text = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
           }
         },
         decoration: InputDecoration(

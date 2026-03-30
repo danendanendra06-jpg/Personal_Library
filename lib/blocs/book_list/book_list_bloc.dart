@@ -53,7 +53,7 @@ class BookListBloc extends Bloc<BookListEvent, BookListState> {
          
          emit(BookListLoaded(books));
       } catch (e) {
-         emit(BookListError('Gagal memuat buku: \${e.toString()}'));
+         emit(BookListError('Gagal memuat buku: ${e.toString()}'));
       }
     });
 
@@ -63,7 +63,7 @@ class BookListBloc extends Bloc<BookListEvent, BookListState> {
          // Muat ulang daftar setelah dihapus
          add(FetchBooks(searchQuery: currentSearchQuery, category: currentCategory));
       } catch (e) {
-         emit(BookListError('Gagal menghapus buku: \${e.toString()}'));
+         emit(BookListError('Gagal menghapus buku: ${e.toString()}'));
       }
     });
   }

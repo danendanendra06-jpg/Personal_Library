@@ -192,7 +192,7 @@ class BookDetailPage extends StatelessWidget {
                   if (startDate != null && startDate.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
-                      child: Text('Mulai: $startDate \${(finishDate != null && finishDate.isNotEmpty) ? " | Selesai: $finishDate" : ""}', 
+                      child: Text('Mulai: $startDate ${(finishDate != null && finishDate.isNotEmpty) ? " | Selesai: $finishDate" : ""}', 
                         style: const TextStyle(color: Colors.white38, fontSize: 13, fontStyle: FontStyle.italic)
                       ),
                     ),

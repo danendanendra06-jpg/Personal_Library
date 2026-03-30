@@ -17,6 +17,7 @@ class BookListPage extends StatefulWidget {
 
 class _BookListPageState extends State<BookListPage> {
   final TextEditingController _searchController = TextEditingController();
+  String _groupBy = 'Status'; // Default Letterboxd-style
   
   @override
   void initState() {
@@ -121,17 +122,42 @@ class _BookListPageState extends State<BookListPage> {
 
             const SizedBox(height: 24),
 
-            // Categories
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.0),
-              child: Text(
-                'Kategori',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'OpenSans',
-                ),
+            // Categories & Grouping Toggle
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Filter Kategori',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'OpenSans',
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: secondaryColor,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _groupBy,
+                        dropdownColor: primaryColor,
+                        icon: const Icon(Icons.sort, color: goldColor, size: 18),
+                        style: const TextStyle(color: goldColor, fontSize: 13, fontWeight: FontWeight.bold),
+                        items: ['Status', 'Kategori'].map((e) => DropdownMenuItem(value: e, child: Text('Grup: $e'))).toList(),
+                        onChanged: (val) {
+                          if (val != null) setState(() => _groupBy = val);
+                        },
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
@@ -183,8 +209,9 @@ class _BookListPageState extends State<BookListPage> {
             // Horizontal Book Lists Grouped by Category
             const SizedBox(height: 12),
             Expanded(
-              child: BlocBuilder<BookListBloc, BookListState>(
-                builder: (context, state) {
+              child: ClipRect(
+                child: BlocBuilder<BookListBloc, BookListState>(
+                  builder: (context, state) {
                   if (state is BookListLoading || state is BookListInitial) {
                     return const Center(child: CircularProgressIndicator(color: goldColor));
                   } else if (state is BookListError) {
@@ -194,19 +221,46 @@ class _BookListPageState extends State<BookListPage> {
                     if (books.isEmpty) {
                       return const Center(child: Text('Tidak ada buku yang sesuai.', style: TextStyle(color: Colors.white54)));
                     }
-                    // Grouping Books by Category
+                    // Dynamic Grouping Based on `_groupBy`
                     Map<String, List<Map<String, dynamic>>> groupedBooks = {};
                     for (var book in books) {
-                      String cat = book['category_name'] ?? 'Uncategorized';
-                      if (!groupedBooks.containsKey(cat)) groupedBooks[cat] = [];
-                      groupedBooks[cat]!.add(book);
+                      String groupKey = 'Uncategorized';
+                      if (_groupBy == 'Kategori') {
+                         groupKey = book['category_name'] ?? 'Uncategorized';
+                         if (groupKey.trim().isEmpty) groupKey = 'Uncategorized';
+                      } else if (_groupBy == 'Status') {
+                         groupKey = book['status'] ?? 'Uncategorized';
+                         if (groupKey.trim().isEmpty) groupKey = 'Uncategorized';
+                         // Normalize
+                         if (groupKey != 'Read' && groupKey != 'Reading' && groupKey != 'Wishlist') {
+                           groupKey = 'Uncategorized';
+                         }
+                      }
+                      
+                      if (!groupedBooks.containsKey(groupKey)) groupedBooks[groupKey] = [];
+                      groupedBooks[groupKey]!.add(book);
+                    }
+
+                    // Sort groups for Status
+                    List<String> sortedKeys = groupedBooks.keys.toList();
+                    if (_groupBy == 'Status') {
+                      List<String> order = ['Reading', 'Read', 'Wishlist', 'Uncategorized'];
+                      sortedKeys.sort((a, b) {
+                        int indexA = order.indexOf(a);
+                        int indexB = order.indexOf(b);
+                        if (indexA == -1) indexA = 99;
+                        if (indexB == -1) indexB = 99;
+                        return indexA.compareTo(indexB);
+                      });
+                    } else {
+                      sortedKeys.sort(); // Alfabetis kategoti
                     }
 
                     return ListView.builder(
-                      itemCount: groupedBooks.length,
+                      itemCount: sortedKeys.length,
                       itemBuilder: (context, index) {
-                        final categoryName = groupedBooks.keys.elementAt(index);
-                        final categoryBooks = groupedBooks[categoryName]!;
+                        final groupName = sortedKeys[index];
+                        final listDalamGrup = groupedBooks[groupName]!;
 
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,11 +271,11 @@ class _BookListPageState extends State<BookListPage> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    categoryName,
+                                    _groupBy == 'Status' ? '$groupName Tracker' : groupName,
                                     style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'OpenSans'),
                                   ),
                                   Text(
-                                    '${categoryBooks.length} buku',
+                                    '${listDalamGrup.length} buku',
                                     style: const TextStyle(color: Colors.white38, fontSize: 12),
                                   ),
                                 ],
@@ -232,9 +286,9 @@ class _BookListPageState extends State<BookListPage> {
                               child: ListView.builder(
                                 padding: const EdgeInsets.symmetric(horizontal: 24),
                                 scrollDirection: Axis.horizontal, // Memanjang kesamping
-                                itemCount: categoryBooks.length,
+                                itemCount: listDalamGrup.length,
                                 itemBuilder: (context, bIndex) {
-                                  final book = categoryBooks[bIndex];
+                                  final book = listDalamGrup[bIndex];
                                   return BookCard(
                                     bookMap: book,
                                     onView: () async {
@@ -290,6 +344,7 @@ class _BookListPageState extends State<BookListPage> {
                   return const SizedBox();
                 },
               ),
+            ),
             ),
           ],
         ),

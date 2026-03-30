@@ -87,7 +87,7 @@ class DbBook {
   }
 
   Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'library_v6.db');
+    String path = join(await getDatabasesPath(), 'library_v7.db');
     return await openDatabase(
       path,
       version: 1,
@@ -128,7 +128,7 @@ class DbBook {
         await db.insert('book_author', {'book_id': 1, 'author_id': 1});
         await db.insert('book_author', {'book_id': 2, 'author_id': 2});
         
-        // Contoh Data Reading Log
+        // Buku 1: Laskar Pelangi
         await db.insert('reading_logs', {
           'book_id': 1, 
           'start_date': '2025-01-01', 
@@ -136,6 +136,30 @@ class DbBook {
           'rating': 5, 
           'notes': 'Kisah yang mantap!',
           'status': 'Read',
+        });
+        
+        // Buku 2: Bumi Manusia (Reading)
+        await db.insert('books', {'title': 'Bumi Manusia', 'year': 1980, 'cover_url': 'https://upload.wikimedia.org/wikipedia/id/5/5a/Bumi_manusia.jpg', 'category_id': 1, 'publisher_id': 2});
+        await db.insert('book_author', {'book_id': 2, 'author_id': 2});
+        await db.insert('reading_logs', {
+          'book_id': 2, 
+          'start_date': '2025-03-20', 
+          'finish_date': '', 
+          'rating': 0, 
+          'notes': 'Sedang seru-serunya...',
+          'status': 'Reading',
+        });
+
+        // Buku 3: Sapiens (Wishlist)
+        await db.insert('books', {'title': 'Sapiens', 'year': 2011, 'cover_url': 'https://upload.wikimedia.org/wikipedia/en/0/06/%E1%B8%A4ay_Bin_Yaq%E1%B8%8Dan.jpg', 'category_id': 3, 'publisher_id': 3});
+        await db.insert('book_author', {'book_id': 3, 'author_id': 1}); // pinjam author 1
+        await db.insert('reading_logs', {
+          'book_id': 3, 
+          'start_date': '', 
+          'finish_date': '', 
+          'rating': 0, 
+          'notes': 'Pengen banget baca ini pas gajian',
+          'status': 'Wishlist',
         });
       },
     );
