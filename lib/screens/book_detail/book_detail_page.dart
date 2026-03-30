@@ -19,6 +19,16 @@ class BookDetailPage extends StatelessWidget {
     final author = bookMap['author_name'] ?? 'Unknown Author';
     final publisher = bookMap['publisher_name'] ?? 'Unknown Publisher';
     final year = bookMap['year']?.toString() ?? '-';
+    
+    final status = bookMap['status'] ?? 'Wishlist';
+    final rating = bookMap['rating'] != null ? (bookMap['rating'] as int) : 0;
+    final notes = bookMap['notes']?.toString();
+    final startDate = bookMap['start_date']?.toString();
+    final finishDate = bookMap['finish_date']?.toString();
+
+    // Generate Stars
+    String starStr = '';
+    for(int i=0; i<rating; i++) { starStr += '★'; }
 
     return Scaffold(
       backgroundColor: primaryColor,
@@ -112,6 +122,13 @@ class BookDetailPage extends StatelessWidget {
                       fontStyle: FontStyle.italic,
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  // Rating Stars
+                  if (rating > 0)
+                    Text(
+                      starStr,
+                      style: const TextStyle(color: goldColor, fontSize: 28, letterSpacing: 4),
+                    ),
                 ],
               ),
             ),
@@ -139,67 +156,73 @@ class BookDetailPage extends StatelessWidget {
             ),
             const SizedBox(height: 32),
 
-            // Deskripsi (Dummy)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.0),
+            // Ulasan Pribadi (Letterboxd Diary-style)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Sinopsis',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Ulasan Pribadi',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: status == 'Read' 
+                              ? Colors.green.withOpacity(0.8) 
+                              : (status == 'Reading' ? Colors.blue.withOpacity(0.8) : Colors.black54),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          status.toUpperCase(),
+                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 12),
-                  Text(
-                    'Buku ini adalah buku terlaris yang menawarkan berbagai sudut pandang baru. Ditulis oleh pakar di bidangnya dan diterbitkan secara resmi. Cocok untuk semua kalangan yang ingin memperkaya wawasan.',
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 15,
-                      height: 1.6,
+                  const SizedBox(height: 12),
+                  if (startDate != null && startDate.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Text('Mulai: $startDate \${(finishDate != null && finishDate.isNotEmpty) ? " | Selesai: $finishDate" : ""}', 
+                        style: const TextStyle(color: Colors.white38, fontSize: 13, fontStyle: FontStyle.italic)
+                      ),
                     ),
-                    textAlign: TextAlign.justify,
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withOpacity(0.05)),
+                    ),
+                    child: Text(
+                      (notes == null || notes.isEmpty) 
+                          ? 'Belum ada ulasan yang ditulis untuk buku ini.'
+                          : notes,
+                      style: TextStyle(
+                        color: (notes == null || notes.isEmpty) ? Colors.white38 : Colors.white70,
+                        fontSize: 15,
+                        height: 1.6,
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 100), // Spasi untuk tombol
+            const SizedBox(height: 100), // Spasi margin
           ],
         ),
       ),
-      bottomSheet: Container(
-        color: primaryColor,
-        padding: const EdgeInsets.all(24),
-        child: SizedBox(
-          width: double.infinity,
-          height: 55,
-          child: ElevatedButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Permintaan Peminjaman Berhasil Dikirim!')),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: goldColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: const Text(
-              'PINJAM BUKU',
-              style: TextStyle(
-                color: primaryColor,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ),
-        ),
-      ),
+      // Tombol Pinjam dihapus karena ini library personal
     );
   }
 

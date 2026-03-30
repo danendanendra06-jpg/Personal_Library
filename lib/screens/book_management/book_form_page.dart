@@ -16,6 +16,13 @@ class _BookFormPageState extends State<BookFormPage> {
   final _titleController = TextEditingController();
   final _yearController = TextEditingController();
   final _coverUrlController = TextEditingController();
+  
+  // Reading Log Controllers
+  final _startDateController = TextEditingController();
+  final _finishDateController = TextEditingController();
+  final _notesController = TextEditingController();
+  int _rating = 0;
+  String? _selectedStatus = 'Wishlist';
 
   int? _selectedCategoryId;
   int? _selectedPublisherId;
@@ -31,6 +38,13 @@ class _BookFormPageState extends State<BookFormPage> {
       _coverUrlController.text = b['cover_url'] ?? '';
       _selectedCategoryId = b['category_id'];
       _selectedPublisherId = b['publisher_id'];
+
+      // Reading Logs
+      _startDateController.text = b['start_date'] ?? '';
+      _finishDateController.text = b['finish_date'] ?? '';
+      _notesController.text = b['notes'] ?? '';
+      _rating = b['rating'] ?? 0;
+      _selectedStatus = b['status'] ?? 'Wishlist';
       
       // Parse author_ids from SQLite string or Web List
       final aIds = b['author_ids'];
@@ -76,6 +90,11 @@ class _BookFormPageState extends State<BookFormPage> {
           categoryId: _selectedCategoryId!,
           publisherId: _selectedPublisherId!,
           authorIds: validAuthorIds,
+          startDate: _startDateController.text.trim(),
+          finishDate: _finishDateController.text.trim(),
+          notes: _notesController.text.trim(),
+          rating: _rating,
+          status: _selectedStatus,
         ),
       );
     }
@@ -185,6 +204,73 @@ class _BookFormPageState extends State<BookFormPage> {
                   _buildLabel('Pilih Penulis (Bisa Lebih Dari Satu)'),
                   _buildAuthorDropdowns(auths, goldColor, secondaryColor),
 
+                  // Batas Personal Library Form =================================
+                  const SizedBox(height: 36),
+                  const Divider(color: Colors.white24, thickness: 1),
+                  const SizedBox(height: 24),
+                  Text('Progress Membaca & Ulasan (Opsional)', style: TextStyle(color: goldColor, fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  
+                  _buildLabel('Status Buku'),
+                  _buildDropdown(
+                    value: _selectedStatus,
+                    items: ['Wishlist', 'Reading', 'Read'].map((s) {
+                      return DropdownMenuItem<String>(
+                        value: s,
+                        child: Text(s),
+                      );
+                    }).toList(),
+                    onChanged: (val) => setState(() => _selectedStatus = val),
+                    secondaryColor: secondaryColor,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Start & Finish Date Row
+                  Row(
+                    children: [
+                      Expanded(child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildLabel('Mulai Baca'),
+                          _buildDateField(_startDateController, 'YYYY-MM-DD', Icons.calendar_today, secondaryColor),
+                        ],
+                      )),
+                      const SizedBox(width: 16),
+                      Expanded(child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildLabel('Selesai Baca'),
+                          _buildDateField(_finishDateController, 'YYYY-MM-DD', Icons.check_circle_outline, secondaryColor),
+                        ],
+                      )),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  _buildLabel('Rating Buku (1-5 Bintang)'),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: List.generate(5, (index) {
+                      return IconButton(
+                        icon: Icon(
+                          index < _rating ? Icons.star : Icons.star_border,
+                          color: goldColor,
+                          size: 32,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _rating = index + 1;
+                          });
+                        },
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildLabel('Catatan atau Kesan Pesan'),
+                  _buildTextField(_notesController, 'Tulis review singkat kamu disini...', Icons.edit_note, secondaryColor, isOptional: true, maxLines: 4),
+                  // ==============================================================
+
                   const SizedBox(height: 48),
                   SizedBox(
                     width: double.infinity,
@@ -227,7 +313,7 @@ class _BookFormPageState extends State<BookFormPage> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String hint, IconData icon, Color color, {bool isNumber = false, bool isOptional = false}) {
+  Widget _buildTextField(TextEditingController controller, String hint, IconData icon, Color color, {bool isNumber = false, bool isOptional = false, int maxLines = 1}) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.25),
@@ -238,6 +324,54 @@ class _BookFormPageState extends State<BookFormPage> {
         controller: controller,
         style: const TextStyle(color: Colors.white, fontSize: 16),
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        maxLines: maxLines,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+          prefixIcon: maxLines == 1 ? Icon(icon, color: const Color(0xFFE9C46A).withOpacity(0.7)) : null,
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(vertical: 18, horizontal: maxLines == 1 ? 0 : 20),
+        ),
+        validator: (value) => !isOptional && (value == null || value.isEmpty) ? 'Form ini wajib diisi' : null,
+      ),
+    );
+  }
+
+  Widget _buildDateField(TextEditingController controller, String hint, IconData icon, Color color) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.25),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: TextField( // Tidak pakai mutlak divalidasi karna opsional
+        controller: controller,
+        style: const TextStyle(color: Colors.white, fontSize: 16),
+        readOnly: true,
+        onTap: () async {
+          final date = await showDatePicker(
+            context: context,
+            initialDate: DateTime.now(),
+            firstDate: DateTime(2000),
+            lastDate: DateTime(2100),
+            builder: (context, child) {
+              return Theme(
+                data: ThemeData.dark().copyWith(
+                  colorScheme: const ColorScheme.dark(
+                    primary: Color(0xFFE9C46A),
+                    onPrimary: Colors.black,
+                    surface: Color(0xFF1B263B),
+                    onSurface: Colors.white,
+                  ),
+                ),
+                child: child!,
+              );
+            },
+          );
+          if (date != null) {
+            controller.text = "\${date.year}-\${date.month.toString().padLeft(2, '0')}-\${date.day.toString().padLeft(2, '0')}";
+          }
+        },
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
@@ -245,12 +379,11 @@ class _BookFormPageState extends State<BookFormPage> {
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 18),
         ),
-        validator: (value) => !isOptional && (value == null || value.isEmpty) ? 'Form ini wajib diisi' : null,
       ),
     );
   }
 
-  Widget _buildDropdown({required int? value, required List<DropdownMenuItem<int>> items, required Function(int?) onChanged, required Color secondaryColor}) {
+  Widget _buildDropdown<T>({required T? value, required List<DropdownMenuItem<T>> items, required Function(T?) onChanged, required Color secondaryColor}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       decoration: BoxDecoration(
@@ -259,7 +392,7 @@ class _BookFormPageState extends State<BookFormPage> {
         border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: DropdownButtonHideUnderline(
-        child: DropdownButton<int>(
+        child: DropdownButton<T>(
           value: value,
           isExpanded: true,
           dropdownColor: secondaryColor,

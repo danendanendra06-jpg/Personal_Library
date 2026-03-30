@@ -7,7 +7,6 @@ class MasterDataPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF0D1B2A);
-    const Color secondaryColor = Color(0xFF1B263B);
 
     return Scaffold(
       backgroundColor: primaryColor,

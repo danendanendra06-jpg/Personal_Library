@@ -26,6 +26,18 @@ class DbBook {
     {'id_author': 3, 'name': 'Raditya Dika', 'country': 'Indonesia'},
   ];
 
+  static final List<Map<String, dynamic>> _webReadingLogs = [
+    {
+      'id_log': 1,
+      'book_id': 1, // Laskar Pelangi
+      'start_date': '2025-01-01',
+      'finish_date': '2025-01-10',
+      'rating': 5,
+      'notes': 'Kisah yang mantap!',
+      'status': 'Read',
+    }
+  ];
+
   static List<Map<String, dynamic>> _webBooks = [
     {
       'id_book': 1,
@@ -75,7 +87,7 @@ class DbBook {
   }
 
   Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'library_v4.db');
+    String path = join(await getDatabasesPath(), 'library_v6.db');
     return await openDatabase(
       path,
       version: 1,
@@ -86,10 +98,20 @@ class DbBook {
         await db.execute('''CREATE TABLE books(
             id_book INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, year INTEGER, cover_url TEXT, publisher_id INTEGER, category_id INTEGER,
             FOREIGN KEY (publisher_id) REFERENCES publishers (id_publisher), FOREIGN KEY (category_id) REFERENCES categories (id_category))''');
-        // Tabel Relasi Many to Many
         await db.execute('''CREATE TABLE book_author(
             id INTEGER PRIMARY KEY AUTOINCREMENT, book_id INTEGER, author_id INTEGER,
             FOREIGN KEY (book_id) REFERENCES books (id_book), FOREIGN KEY (author_id) REFERENCES authors (id_author))''');
+        
+        // Tabel Personal Library (Reading Logs)
+        await db.execute('''CREATE TABLE reading_logs(
+            id_log INTEGER PRIMARY KEY AUTOINCREMENT, 
+            book_id INTEGER, 
+            start_date TEXT, 
+            finish_date TEXT, 
+            rating INTEGER, 
+            notes TEXT,
+            status TEXT,
+            FOREIGN KEY (book_id) REFERENCES books (id_book))''');
 
         await db.insert('categories', {'category_name': 'Novel'});
         await db.insert('categories', {'category_name': 'Teknologi'});
@@ -105,6 +127,16 @@ class DbBook {
 
         await db.insert('book_author', {'book_id': 1, 'author_id': 1});
         await db.insert('book_author', {'book_id': 2, 'author_id': 2});
+        
+        // Contoh Data Reading Log
+        await db.insert('reading_logs', {
+          'book_id': 1, 
+          'start_date': '2025-01-01', 
+          'finish_date': '2025-01-10', 
+          'rating': 5, 
+          'notes': 'Kisah yang mantap!',
+          'status': 'Read',
+        });
       },
     );
   }
@@ -138,12 +170,14 @@ class DbBook {
       rawData = await db.rawQuery('''
         SELECT b.id_book, b.title, b.year, b.cover_url, b.category_id, b.publisher_id, c.category_name, p.publisher_name, 
                GROUP_CONCAT(ba.author_id, ',') as author_ids, 
-               GROUP_CONCAT(a.name, ', ') as author_name
+               GROUP_CONCAT(a.name, ', ') as author_name,
+               rl.start_date, rl.finish_date, rl.rating, rl.notes, rl.status
         FROM books b
         LEFT JOIN categories c ON b.category_id = c.id_category
         LEFT JOIN publishers p ON b.publisher_id = p.id_publisher
         LEFT JOIN book_author ba ON b.id_book = ba.book_id
         LEFT JOIN authors a ON ba.author_id = a.id_author
+        LEFT JOIN reading_logs rl ON b.id_book = rl.book_id
         GROUP BY b.id_book
       ''');
     }
@@ -163,7 +197,7 @@ class DbBook {
   }
 
   // --- CRUD METHODS (INSERT, UPDATE, DELETE) ---
-  Future<void> insertBook(String title, int year, String coverUrl, int categoryId, int publisherId, List<int> authorIds) async {
+  Future<void> insertBook(String title, int year, String coverUrl, int categoryId, int publisherId, List<int> authorIds, {String? startDate, String? finishDate, int? rating, String? notes, String? status}) async {
     if (kIsWeb) {
       final category = _webCategories.firstWhere((c) => c['id_category'] == categoryId);
       final publisher = _webPublishers.firstWhere((p) => p['id_publisher'] == publisherId);
@@ -200,9 +234,21 @@ class DbBook {
         'author_id': aid,
       });
     }
+
+    // Insert Reading Log if any tracking data exists
+    if (rating != null || notes != null || startDate != null || finishDate != null || status != null) {
+      await db.insert('reading_logs', {
+        'book_id': bookId,
+        'start_date': startDate ?? '',
+        'finish_date': finishDate ?? '',
+        'rating': rating ?? 0,
+        'notes': notes ?? '',
+        'status': status ?? 'Wishlist',
+      });
+    }
   }
 
-  Future<void> updateBook(int bookId, String title, int year, String coverUrl, int categoryId, int publisherId, List<int> authorIds) async {
+  Future<void> updateBook(int bookId, String title, int year, String coverUrl, int categoryId, int publisherId, List<int> authorIds, {String? startDate, String? finishDate, int? rating, String? notes, String? status}) async {
     if (kIsWeb) {
       final index = _webBooks.indexWhere((b) => b['id_book'] == bookId);
       if (index != -1) {
@@ -234,13 +280,25 @@ class DbBook {
       'category_id': categoryId,
       'publisher_id': publisherId,
     }, where: 'id_book = ?', whereArgs: [bookId]);
-    
-    // Simplifikasi update multi author (hapus lama dan bikin baru)
+    // Simplifikasi update: Hapus relasi lama, buat baru
     await db.delete('book_author', where: 'book_id = ?', whereArgs: [bookId]);
     for (int aid in authorIds) {
       await db.insert('book_author', {
         'book_id': bookId,
         'author_id': aid,
+      });
+    }
+
+    // Update Reading Log (Mirip update author, delete + insert)
+    if (rating != null || notes != null || startDate != null || finishDate != null || status != null) {
+      await db.delete('reading_logs', where: 'book_id = ?', whereArgs: [bookId]);
+      await db.insert('reading_logs', {
+        'book_id': bookId,
+        'start_date': startDate ?? '',
+        'finish_date': finishDate ?? '',
+        'rating': rating ?? 0,
+        'notes': notes ?? '',
+        'status': status ?? 'Wishlist',
       });
     }
   }

@@ -180,18 +180,7 @@ class _BookListPageState extends State<BookListPage> {
             const SizedBox(height: 24),
 
             // Book List
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.0),
-              child: Text(
-                'Daftar Buku',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'OpenSans',
-                ),
-              ),
-            ),
+            // Horizontal Book Lists Grouped by Category
             const SizedBox(height: 12),
             Expanded(
               child: BlocBuilder<BookListBloc, BookListState>(
@@ -205,62 +194,95 @@ class _BookListPageState extends State<BookListPage> {
                     if (books.isEmpty) {
                       return const Center(child: Text('Tidak ada buku yang sesuai.', style: TextStyle(color: Colors.white54)));
                     }
+                    // Grouping Books by Category
+                    Map<String, List<Map<String, dynamic>>> groupedBooks = {};
+                    for (var book in books) {
+                      String cat = book['category_name'] ?? 'Uncategorized';
+                      if (!groupedBooks.containsKey(cat)) groupedBooks[cat] = [];
+                      groupedBooks[cat]!.add(book);
+                    }
+
                     return ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      itemCount: books.length,
+                      itemCount: groupedBooks.length,
                       itemBuilder: (context, index) {
-                        return BookCard(
-                          bookMap: books[index],
-                          onView: () async {
-                            bool? changed = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => BookDetailPage(bookMap: books[index]),
+                        final categoryName = groupedBooks.keys.elementAt(index);
+                        final categoryBooks = groupedBooks[categoryName]!;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    categoryName,
+                                    style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'OpenSans'),
+                                  ),
+                                  Text(
+                                    '${categoryBooks.length} buku',
+                                    style: const TextStyle(color: Colors.white38, fontSize: 12),
+                                  ),
+                                ],
                               ),
-                            );
-                            if (changed == true) {
-                              final bloc = context.read<BookListBloc>();
-                              bloc.add(FetchBooks(searchQuery: _searchController.text, category: bloc.currentCategory));
-                            }
-                          },
-                          onEdit: () async {
-                            bool? changed = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => BookFormPage(existingBook: books[index]),
+                            ),
+                            SizedBox(
+                              height: 220, // Ketinggian layout buku yang baru
+                              child: ListView.builder(
+                                padding: const EdgeInsets.symmetric(horizontal: 24),
+                                scrollDirection: Axis.horizontal, // Memanjang kesamping
+                                itemCount: categoryBooks.length,
+                                itemBuilder: (context, bIndex) {
+                                  final book = categoryBooks[bIndex];
+                                  return BookCard(
+                                    bookMap: book,
+                                    onView: () async {
+                                      bool? changed = await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => BookDetailPage(bookMap: book)),
+                                      );
+                                      if (changed == true) _refreshBooks();
+                                    },
+                                    onEdit: () async {
+                                      bool? changed = await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => BookFormPage(existingBook: book)),
+                                      );
+                                      if (changed == true) _refreshBooks();
+                                    },
+                                    onDelete: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (BuildContext ctx) {
+                                          return AlertDialog(
+                                            backgroundColor: const Color(0xFF1B263B),
+                                            title: const Text('Hapus Buku', style: TextStyle(color: Colors.white)),
+                                            content: Text('Hapus buku "${book["title"]}"?', style: const TextStyle(color: Colors.white70)),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(ctx),
+                                                child: const Text('Batal', style: TextStyle(color: Colors.white54)),
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.pop(ctx);
+                                                  context.read<BookListBloc>().add(DeleteBook(book['id_book']));
+                                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Buku telah dihapus!')));
+                                                },
+                                                child: const Text('Hapus', style: TextStyle(color: Colors.redAccent)),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    },
+                                  );
+                                },
                               ),
-                            );
-                            if (changed == true) {
-                              final bloc = context.read<BookListBloc>();
-                              bloc.add(FetchBooks(searchQuery: _searchController.text, category: bloc.currentCategory));
-                            }
-                          },
-                          onDelete: () {
-                            showDialog(
-                              context: context,
-                              builder: (BuildContext ctx) {
-                                return AlertDialog(
-                                  backgroundColor: const Color(0xFF1B263B),
-                                  title: const Text('Hapus Buku', style: TextStyle(color: Colors.white)),
-                                  content: Text('Hapus buku "${books[index]['title']}"?', style: const TextStyle(color: Colors.white70)),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(ctx),
-                                      child: const Text('Batal', style: TextStyle(color: Colors.white54)),
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.pop(ctx);
-                                        context.read<BookListBloc>().add(DeleteBook(books[index]['id_book']));
-                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Buku telah dihapus!')));
-                                      },
-                                      child: const Text('Hapus', style: TextStyle(color: Colors.redAccent)),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                          },
+                            ),
+                            const SizedBox(height: 16),
+                          ],
                         );
                       },
                     );
@@ -272,19 +294,23 @@ class _BookListPageState extends State<BookListPage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: goldColor,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: Colors.black, // Dark mode pill btn mapping
+        elevation: 12,
         onPressed: () async {
           // Navigasi ke Form Tambah Buku
           bool? changed = await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const BookFormPage()),
           );
-          if (changed == true) {
-            context.read<BookListBloc>().add(FetchBooks(searchQuery: _searchController.text, category: context.read<BookListBloc>().currentCategory));
-          }
+          if (changed == true) _refreshBooks();
         },
-        child: const Icon(Icons.add, color: primaryColor),
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text(
+          'Add Books', 
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+        ),
       ),
     );
   }

@@ -14,6 +14,11 @@ class SaveBookEvent extends BookFormEvent {
   final int categoryId;
   final int publisherId;
   final List<int> authorIds; // Sekarang menerima Array/List untuk multiple authors
+  final String? startDate;
+  final String? finishDate;
+  final int? rating;
+  final String? notes;
+  final String? status;
 
   SaveBookEvent({
     this.existingBook,
@@ -23,6 +28,11 @@ class SaveBookEvent extends BookFormEvent {
     required this.categoryId,
     required this.publisherId,
     required this.authorIds,
+    this.startDate,
+    this.finishDate,
+    this.rating,
+    this.notes,
+    this.status,
   });
 }
 
@@ -75,9 +85,9 @@ class BookFormBloc extends Bloc<BookFormEvent, BookFormState> {
        emit(BookFormSaving());
        try {
           if (event.existingBook != null) {
-              await dbBook.updateBook(event.existingBook!['id_book'], event.title, event.year, event.coverUrl, event.categoryId, event.publisherId, event.authorIds);
+              await dbBook.updateBook(event.existingBook!['id_book'], event.title, event.year, event.coverUrl, event.categoryId, event.publisherId, event.authorIds, startDate: event.startDate, finishDate: event.finishDate, rating: event.rating, notes: event.notes, status: event.status);
           } else {
-              await dbBook.insertBook(event.title, event.year, event.coverUrl, event.categoryId, event.publisherId, event.authorIds);
+              await dbBook.insertBook(event.title, event.year, event.coverUrl, event.categoryId, event.publisherId, event.authorIds, startDate: event.startDate, finishDate: event.finishDate, rating: event.rating, notes: event.notes, status: event.status);
           }
           emit(BookFormSuccess());
        } catch (e) {
