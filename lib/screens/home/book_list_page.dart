@@ -7,6 +7,8 @@ import '../master_data/master_data_page.dart';
 import '../../widgets/book_card.dart';
 import '../../widgets/category_chip.dart';
 import '../../utils/db_book.dart';
+import '../../widgets/app_drawer.dart';
+import '../../utils/db_book.dart';
 
 class BookListPage extends StatefulWidget {
   const BookListPage({super.key});
@@ -43,6 +45,7 @@ class _BookListPageState extends State<BookListPage> {
 
     return Scaffold(
       backgroundColor: primaryColor,
+      drawer: AppDrawer(onRefresh: _refreshBooks),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,8 +54,16 @@ class _BookListPageState extends State<BookListPage> {
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  Builder(
+                    builder: (ctx) => IconButton(
+                      icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 28),
+                      onPressed: () => Scaffold.of(ctx).openDrawer(),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
                   const Text(
                     'Selamat Datang!',
                     style: TextStyle(
@@ -60,25 +71,6 @@ class _BookListPageState extends State<BookListPage> {
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
                       fontFamily: 'OpenSans',
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const MasterDataPage()),
-                      );
-                      setState(() {});
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: secondaryColor,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white10),
-                      ),
-                      child: const Icon(Icons.settings, color: goldColor),
                     ),
                   ),
                 ],
@@ -347,24 +339,6 @@ class _BookListPageState extends State<BookListPage> {
             ),
             ),
           ],
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: Colors.black, // Dark mode pill btn mapping
-        elevation: 12,
-        onPressed: () async {
-          // Navigasi ke Form Tambah Buku
-          bool? changed = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const BookFormPage()),
-          );
-          if (changed == true) _refreshBooks();
-        },
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text(
-          'Add Books', 
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
         ),
       ),
     );

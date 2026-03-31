@@ -364,4 +364,40 @@ class DbBook {
     Database db = await database;
     await db.insert('publishers', {'publisher_name': name, 'city': '-'});
   }
+
+  Future<void> updateCategory(int id, String name) async {
+    if (kIsWeb) {
+      final idx = _webCategories.indexWhere((c) => c['id_category'] == id);
+      if (idx != -1) _webCategories[idx]['category_name'] = name;
+      return;
+    }
+    Database db = await database;
+    await db.update('categories', {'category_name': name}, where: 'id_category = ?', whereArgs: [id]);
+  }
+
+  Future<void> updateAuthor(int id, String name, String country) async {
+    if (kIsWeb) {
+      final idx = _webAuthors.indexWhere((a) => a['id_author'] == id);
+      if (idx != -1) {
+        _webAuthors[idx]['name'] = name;
+        _webAuthors[idx]['country'] = country;
+      }
+      return;
+    }
+    Database db = await database;
+    await db.update('authors', {'name': name, 'country': country}, where: 'id_author = ?', whereArgs: [id]);
+  }
+
+  Future<void> updatePublisher(int id, String name, String city) async {
+    if (kIsWeb) {
+      final idx = _webPublishers.indexWhere((p) => p['id_publisher'] == id);
+      if (idx != -1) {
+        _webPublishers[idx]['publisher_name'] = name;
+        _webPublishers[idx]['city'] = city;
+      }
+      return;
+    }
+    Database db = await database;
+    await db.update('publishers', {'publisher_name': name, 'city': city}, where: 'id_publisher = ?', whereArgs: [id]);
+  }
 }
