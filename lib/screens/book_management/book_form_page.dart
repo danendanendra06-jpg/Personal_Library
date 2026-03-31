@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart';
 import '../../blocs/book_management/book_form_bloc.dart';
 
 class BookFormPage extends StatefulWidget {
@@ -64,6 +68,20 @@ class _BookFormPageState extends State<BookFormPage> {
     }
     // Memicu BLoC untuk memuat data list dropdown dari DB
     context.read<BookFormBloc>().add(LoadFormData());
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      final appDir = await getApplicationDocumentsDirectory();
+      final fileName = basename(pickedFile.path);
+      final uniqueFileName = '\${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      final savedImage = await File(pickedFile.path).copy('\${appDir.path}/$uniqueFileName');
+      setState(() {
+        _coverUrlController.text = savedImage.path;
+      });
+    }
   }
 
   void _saveBook() {
@@ -169,8 +187,18 @@ class _BookFormPageState extends State<BookFormPage> {
                   _buildTextField(_yearController, 'Contoh: 2024', Icons.calendar_today, secondaryColor, isNumber: true),
 
                   const SizedBox(height: 16),
-                  _buildLabel('URL Gambar Sampul (Opsional)'),
-                  _buildTextField(_coverUrlController, 'Contoh: https://example.com/cover.jpg', Icons.image, secondaryColor, isOptional: true),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildLabel('URL / Gambar Sampul (Opsional)'),
+                      IconButton(
+                        icon: const Icon(Icons.photo_library, color: Color(0xFFE9C46A)),
+                        tooltip: 'Pilih dari Galeri',
+                        onPressed: _pickImage,
+                      ),
+                    ],
+                  ),
+                  _buildTextField(_coverUrlController, 'Ketik link Web atau klik Ikon Galeri di kanan atas', Icons.image, secondaryColor, isOptional: true),
 
                   const SizedBox(height: 16),
                   _buildLabel('Penerbit'),

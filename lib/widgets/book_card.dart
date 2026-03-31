@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'dart:io';
 
 class BookCard extends StatelessWidget {
   final Map<String, dynamic> bookMap;
@@ -42,16 +43,6 @@ class BookCard extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                image: hasCover
-                    ? DecorationImage(
-                        image: NetworkImage(bookMap['cover_url']),
-                        fit: BoxFit.cover,
-                        onError: (e, s) {},
-                      )
-                    : const DecorationImage(
-                        image: AssetImage('assets/images/Bangunan.jpg'),
-                        fit: BoxFit.cover,
-                      ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.3),
@@ -59,6 +50,22 @@ class BookCard extends StatelessWidget {
                     offset: const Offset(0, 5),
                   ),
                 ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: hasCover
+                    ? (bookMap['cover_url'].toString().startsWith('http')
+                        ? Image.network(
+                            bookMap['cover_url'],
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Image.asset('assets/images/Bangunan.jpg', fit: BoxFit.cover),
+                          )
+                        : Image.file(
+                            File(bookMap['cover_url']),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Image.asset('assets/images/Bangunan.jpg', fit: BoxFit.cover),
+                          ))
+                    : Image.asset('assets/images/Bangunan.jpg', fit: BoxFit.cover),
               ),
             ),
           ),

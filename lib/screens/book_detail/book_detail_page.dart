@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../../utils/db_book.dart';
 import '../book_management/book_form_page.dart';
 
@@ -83,16 +84,22 @@ class BookDetailPage extends StatelessWidget {
                       offset: const Offset(0, 10),
                     ),
                   ],
-                  image: bookMap['cover_url'] != null && bookMap['cover_url'].toString().isNotEmpty
-                      ? DecorationImage(
-                          image: NetworkImage(bookMap['cover_url']),
-                          fit: BoxFit.cover,
-                          onError: (exception, stackTrace) {}, // Hindari error mbleber jika URL mati
-                        )
-                      : const DecorationImage(
-                          image: AssetImage('assets/images/Bangunan.jpg'),
-                          fit: BoxFit.cover,
-                        ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: bookMap['cover_url'] != null && bookMap['cover_url'].toString().isNotEmpty
+                      ? (bookMap['cover_url'].toString().startsWith('http')
+                        ? Image.network(
+                            bookMap['cover_url'],
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Image.asset('assets/images/Bangunan.jpg', fit: BoxFit.cover),
+                          )
+                        : Image.file(
+                            File(bookMap['cover_url']),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Image.asset('assets/images/Bangunan.jpg', fit: BoxFit.cover),
+                          ))
+                      : Image.asset('assets/images/Bangunan.jpg', fit: BoxFit.cover),
                 ),
               ),
             ),
