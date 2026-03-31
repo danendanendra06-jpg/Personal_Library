@@ -3,6 +3,7 @@ import '../../utils/db_book.dart';
 import '../../widgets/book_card.dart';
 import '../book_detail/book_detail_page.dart';
 import '../book_management/book_form_page.dart';
+import '../../widgets/app_drawer.dart';
 
 class WishlistPage extends StatefulWidget {
   const WishlistPage({super.key});
@@ -30,7 +31,7 @@ class _WishlistPageState extends State<WishlistPage> {
     setState(() => _isLoading = true);
     final allBooks = await _db.getDetailedBooks(); // Ambil semua
     setState(() {
-      _wishlistBooks = allBooks.where((b) => b['status'] == 'Wishlist').toList();
+      _wishlistBooks = allBooks.where((b) => b['is_wishlist'] == 1).toList();
       _isLoading = false;
     });
   }
@@ -39,9 +40,16 @@ class _WishlistPageState extends State<WishlistPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: primaryColor,
+      drawer: AppDrawer(onRefresh: _loadWishlist),
       appBar: AppBar(
         backgroundColor: secondaryColor,
         elevation: 0,
+        leading: Builder(
+          builder: (ctx) => IconButton(
+             icon: const Icon(Icons.menu),
+             onPressed: () => Scaffold.of(ctx).openDrawer(),
+          ),
+        ),
         title: const Text('Wishlist', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),

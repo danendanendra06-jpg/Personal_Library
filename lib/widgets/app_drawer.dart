@@ -41,23 +41,42 @@ class _AppDrawerState extends State<AppDrawer> {
     });
   }
 
-  void _showAddDialog({required String title, required String hint, required Function(String) onSave}) {
+  void _showAddDialog({required String title, required String hint, String? extraHint, Function(String)? onSave, Function(String, String)? onSaveAdvanced}) {
     final TextEditingController ctrl = TextEditingController();
+    final TextEditingController extraCtrl = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
           backgroundColor: secondaryColor,
           title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          content: TextField(
-            controller: ctrl,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(color: Colors.white38),
-              enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Colors.white10), borderRadius: BorderRadius.circular(12)),
-              focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: goldColor), borderRadius: BorderRadius.circular(12)),
-            ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: ctrl,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: hint,
+                  hintStyle: const TextStyle(color: Colors.white38),
+                  enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Colors.white10), borderRadius: BorderRadius.circular(12)),
+                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: goldColor), borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              if (extraHint != null) ...[
+                const SizedBox(height: 16),
+                TextField(
+                  controller: extraCtrl,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: extraHint,
+                    hintStyle: const TextStyle(color: Colors.white38),
+                    enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Colors.white10), borderRadius: BorderRadius.circular(12)),
+                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: goldColor), borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ],
+            ],
           ),
           actions: [
             TextButton(
@@ -68,7 +87,11 @@ class _AppDrawerState extends State<AppDrawer> {
               style: ElevatedButton.styleFrom(backgroundColor: goldColor, foregroundColor: Colors.black),
               onPressed: () async {
                 if (ctrl.text.isNotEmpty) {
-                  await onSave(ctrl.text);
+                  if (onSaveAdvanced != null) {
+                    await onSaveAdvanced(ctrl.text, extraCtrl.text.isEmpty ? 'Unknown' : extraCtrl.text);
+                  } else if (onSave != null) {
+                    await onSave(ctrl.text);
+                  }
                   if (ctx.mounted) Navigator.pop(ctx);
                   _loadData();
                   widget.onRefresh();
@@ -135,7 +158,14 @@ class _AppDrawerState extends State<AppDrawer> {
               padding: EdgeInsets.symmetric(vertical: 24, horizontal: 20),
               child: Row(
                 children: [
-                  Icon(Icons.library_books, color: Color(0xFFE9C46A), size: 36),
+                   ClipRRect(
+                     borderRadius: BorderRadius.all(Radius.circular(8)),
+                     child: Image(
+                       image: AssetImage('assets/images/app_logo.png'),
+                       height: 48,
+                       width: 48,
+                     ),
+                   ),
                   SizedBox(width: 16),
                   Text(
                     'LibraQuest',
@@ -158,14 +188,23 @@ class _AppDrawerState extends State<AppDrawer> {
                   _buildDrawerItem(
                     icon: Icons.home_rounded,
                     title: 'Home',
-                    onTap: () => Navigator.pop(context),
+                    onTap: () {
+                      Navigator.pop(context); // Close Drawer
+                      Navigator.of(context).popUntil((route) => route.isFirst);
+                    },
                   ),
                   _buildDrawerItem(
                     icon: Icons.favorite_rounded,
                     title: 'Wishlist',
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const WishlistPage()));
+                      // Kalo ini halamannya adalah wishlist, ya gaboleh push lagi. Kalo bukan, pergi ke wishlist.
+                      // Mengganti tumpukan layar supaya tidak muncul tombol back tapi icon menu hamburger.
+                      Navigator.pushAndRemoveUntil(
+                         context, 
+                         MaterialPageRoute(builder: (context) => const WishlistPage()),
+                         (route) => route.isFirst,
+                      );
                     },
                   ),
                   
@@ -196,7 +235,8 @@ class _AppDrawerState extends State<AppDrawer> {
                       _showAddDialog(
                         title: 'Tambah Author',
                         hint: 'Nama Author',
-                        onSave: (val) => _db.insertAuthor(val, 'Unknown'),
+                        extraHint: 'Negara (Opsional)',
+                        onSaveAdvanced: (val, extra) => _db.insertAuthor(val, extra.isEmpty ? 'Unknown' : extra),
                       );
                     },
                   ),
@@ -210,7 +250,8 @@ class _AppDrawerState extends State<AppDrawer> {
                       _showAddDialog(
                         title: 'Tambah Publisher',
                         hint: 'Nama Publisher',
-                        onSave: (val) => _db.insertPublisher(val),
+                        extraHint: 'Kota (Opsional)',
+                        onSaveAdvanced: (val, extra) => _db.insertPublisher(val, extra.isEmpty ? '-' : extra),
                       );
                     },
                   ),

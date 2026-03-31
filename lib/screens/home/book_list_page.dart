@@ -218,14 +218,14 @@ class _BookListPageState extends State<BookListPage> {
                     for (var book in books) {
                       String groupKey = 'Uncategorized';
                       if (_groupBy == 'Kategori') {
-                         groupKey = book['category_name'] ?? 'Uncategorized';
-                         if (groupKey.trim().isEmpty) groupKey = 'Uncategorized';
+                         groupKey = book['category_name'] ?? 'Lainnya';
+                         if (groupKey.trim().isEmpty) groupKey = 'Lainnya';
                       } else if (_groupBy == 'Status') {
-                         groupKey = book['status'] ?? 'Uncategorized';
-                         if (groupKey.trim().isEmpty) groupKey = 'Uncategorized';
+                         groupKey = book['status'] ?? 'Belum Ada Status';
+                         if (groupKey.trim().isEmpty) groupKey = 'Belum Ada Status';
                          // Normalize
                          if (groupKey != 'Read' && groupKey != 'Reading' && groupKey != 'Wishlist') {
-                           groupKey = 'Uncategorized';
+                           groupKey = 'Belum Ada Status';
                          }
                       }
                       
@@ -236,7 +236,7 @@ class _BookListPageState extends State<BookListPage> {
                     // Sort groups for Status
                     List<String> sortedKeys = groupedBooks.keys.toList();
                     if (_groupBy == 'Status') {
-                      List<String> order = ['Reading', 'Read', 'Wishlist', 'Uncategorized'];
+                      List<String> order = ['Reading', 'Read', 'Wishlist', 'Belum Ada Status'];
                       sortedKeys.sort((a, b) {
                         int indexA = order.indexOf(a);
                         int indexB = order.indexOf(b);

@@ -21,7 +21,7 @@ class BookDetailPage extends StatelessWidget {
     final publisher = bookMap['publisher_name'] ?? 'Unknown Publisher';
     final year = bookMap['year']?.toString() ?? '-';
     
-    final status = bookMap['status'] ?? 'Wishlist';
+    final status = bookMap['status'];
     final rating = bookMap['rating'] != null ? (bookMap['rating'] as int) : 0;
     final notes = bookMap['notes']?.toString();
     final startDate = bookMap['start_date']?.toString();
@@ -30,6 +30,22 @@ class BookDetailPage extends StatelessWidget {
     // Generate Stars
     String starStr = '';
     for(int i=0; i<rating; i++) { starStr += '★'; }
+
+    Widget buildFallbackCover() {
+      return Container(
+        color: const Color(0xFF2B3A55),
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.menu_book_rounded, color: Colors.white24, size: 64),
+              SizedBox(height: 12),
+              Text('No Cover', style: TextStyle(color: Colors.white24, fontSize: 16, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: primaryColor,
@@ -47,6 +63,18 @@ class BookDetailPage extends StatelessWidget {
         centerTitle: true,
         actions: [
           IconButton(
+            icon: Icon(
+               bookMap['is_wishlist'] == 1 ? Icons.favorite : Icons.favorite_border, 
+               color: Colors.redAccent
+            ),
+            onPressed: () async {
+               await DbBook().toggleWishlist(bookId, bookMap['is_wishlist'] == 1 ? 1 : 0);
+               if (context.mounted) {
+                 Navigator.pop(context, true); // Keluar dengan status refresh = true
+               }
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.edit, color: goldColor),
             onPressed: () async {
               bool? updated = await Navigator.push(
@@ -54,13 +82,12 @@ class BookDetailPage extends StatelessWidget {
                 MaterialPageRoute(builder: (context) => BookFormPage(existingBook: bookMap)),
               );
               if (updated == true) {
-                // Beritahu parent (BookListPage) untuk refresh agar perubahan terlihat
                 Navigator.pop(context, true); 
               }
             },
           ),
           IconButton(
-            icon: const Icon(Icons.delete, color: Colors.redAccent),
+            icon: const Icon(Icons.delete, color: Colors.white54),
             onPressed: () => _showDeleteDialog(context, bookId, title),
           ),
         ],
@@ -92,14 +119,14 @@ class BookDetailPage extends StatelessWidget {
                         ? Image.network(
                             bookMap['cover_url'],
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Image.asset('assets/images/Bangunan.jpg', fit: BoxFit.cover),
+                            errorBuilder: (context, error, stackTrace) => buildFallbackCover(),
                           )
                         : Image.file(
                             File(bookMap['cover_url']),
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Image.asset('assets/images/Bangunan.jpg', fit: BoxFit.cover),
+                            errorBuilder: (context, error, stackTrace) => buildFallbackCover(),
                           ))
-                      : Image.asset('assets/images/Bangunan.jpg', fit: BoxFit.cover),
+                      : buildFallbackCover(),
                 ),
               ),
             ),
@@ -180,19 +207,20 @@ class BookDetailPage extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: status == 'Read' 
-                              ? Colors.green.withOpacity(0.8) 
-                              : (status == 'Reading' ? Colors.blue.withOpacity(0.8) : Colors.black54),
-                          borderRadius: BorderRadius.circular(8),
+                      if (status != null && status.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: status == 'Read' 
+                                ? Colors.green.withOpacity(0.8) 
+                                : (status == 'Reading' ? Colors.blue.withOpacity(0.8) : Colors.black54),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            status.toUpperCase(),
+                            style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
+                          ),
                         ),
-                        child: Text(
-                          status.toUpperCase(),
-                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
-                        ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 12),

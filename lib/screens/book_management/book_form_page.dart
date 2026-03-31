@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart';
+import 'package:path/path.dart' as path;
 import '../../blocs/book_management/book_form_bloc.dart';
 
 class BookFormPage extends StatefulWidget {
@@ -26,7 +26,7 @@ class _BookFormPageState extends State<BookFormPage> {
   final _finishDateController = TextEditingController();
   final _notesController = TextEditingController();
   int _rating = 0;
-  String? _selectedStatus = 'Wishlist';
+  String? _selectedStatus;
 
   int? _selectedCategoryId;
   int? _selectedPublisherId;
@@ -48,7 +48,7 @@ class _BookFormPageState extends State<BookFormPage> {
       _finishDateController.text = b['finish_date'] ?? '';
       _notesController.text = b['notes'] ?? '';
       _rating = b['rating'] ?? 0;
-      _selectedStatus = b['status'] ?? 'Wishlist';
+      _selectedStatus = b['status'];
       
       // Parse author_ids from SQLite string or Web List
       final aIds = b['author_ids'];
@@ -75,9 +75,9 @@ class _BookFormPageState extends State<BookFormPage> {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       final appDir = await getApplicationDocumentsDirectory();
-      final fileName = basename(pickedFile.path);
-      final uniqueFileName = '\${DateTime.now().millisecondsSinceEpoch}_$fileName';
-      final savedImage = await File(pickedFile.path).copy('\${appDir.path}/$uniqueFileName');
+      final fileName = path.basename(pickedFile.path);
+      final uniqueFileName = '${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      final savedImage = await File(pickedFile.path).copy('${appDir.path}/$uniqueFileName');
       setState(() {
         _coverUrlController.text = savedImage.path;
       });
@@ -94,6 +94,19 @@ class _BookFormPageState extends State<BookFormPage> {
           const SnackBar(content: Text('Harap lengkapi kategori, penerbit, dan minimal 1 penulis!')),
         );
         return;
+      }
+
+      if (_startDateController.text.isNotEmpty && _finishDateController.text.isNotEmpty) {
+        try {
+          final sDate = DateTime.parse(_startDateController.text);
+          final fDate = DateTime.parse(_finishDateController.text);
+          if (fDate.isBefore(sDate)) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Tanggal Selesai Baca tidak boleh lebih awal dari Tanggal Mulai Baca!')),
+            );
+            return;
+          }
+        } catch (_) {}
       }
 
       FocusScope.of(context).unfocus(); // Tutup keyboard
@@ -242,7 +255,7 @@ class _BookFormPageState extends State<BookFormPage> {
                   _buildLabel('Status Buku'),
                   _buildDropdown(
                     value: _selectedStatus,
-                    items: ['Wishlist', 'Reading', 'Read'].map((s) {
+                    items: ['Reading', 'Read'].map((s) {
                       return DropdownMenuItem<String>(
                         value: s,
                         child: Text(s),

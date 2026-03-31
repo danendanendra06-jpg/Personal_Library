@@ -50,6 +50,7 @@ class DbBook {
       'publisher_name': 'Bentang Pustaka',
       'author_name': 'Andrea Hirata',
       'author_ids': [1],
+      'is_wishlist': 0,
     },
     {
       'id_book': 2,
@@ -62,6 +63,7 @@ class DbBook {
       'publisher_name': 'Prentice Hall',
       'author_name': 'Robert C. Martin',
       'author_ids': [2],
+      'is_wishlist': 0,
     }
   ];
   static int _webIdCounter = 3;
@@ -87,7 +89,7 @@ class DbBook {
   }
 
   Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'library_v7.db');
+    String path = join(await getDatabasesPath(), 'library_v9.db'); // V9 for new dummy sweep
     return await openDatabase(
       path,
       version: 1,
@@ -97,12 +99,12 @@ class DbBook {
         await db.execute('''CREATE TABLE authors(id_author INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, country TEXT)''');
         await db.execute('''CREATE TABLE books(
             id_book INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, year INTEGER, cover_url TEXT, publisher_id INTEGER, category_id INTEGER,
+            is_wishlist INTEGER DEFAULT 0,
             FOREIGN KEY (publisher_id) REFERENCES publishers (id_publisher), FOREIGN KEY (category_id) REFERENCES categories (id_category))''');
         await db.execute('''CREATE TABLE book_author(
             id INTEGER PRIMARY KEY AUTOINCREMENT, book_id INTEGER, author_id INTEGER,
             FOREIGN KEY (book_id) REFERENCES books (id_book), FOREIGN KEY (author_id) REFERENCES authors (id_author))''');
         
-        // Tabel Personal Library (Reading Logs)
         await db.execute('''CREATE TABLE reading_logs(
             id_log INTEGER PRIMARY KEY AUTOINCREMENT, 
             book_id INTEGER, 
@@ -113,54 +115,89 @@ class DbBook {
             status TEXT,
             FOREIGN KEY (book_id) REFERENCES books (id_book))''');
 
+        // Categories
         await db.insert('categories', {'category_name': 'Novel'});
         await db.insert('categories', {'category_name': 'Teknologi'});
         await db.insert('categories', {'category_name': 'Sains'});
         await db.insert('categories', {'category_name': 'Sejarah'});
+        await db.insert('categories', {'category_name': 'Fiksi Ilmiah'});
+
+        // Publishers
         await db.insert('publishers', {'publisher_name': 'Bentang Pustaka', 'city': 'Yogyakarta'});
         await db.insert('publishers', {'publisher_name': 'Prentice Hall', 'city': 'New Jersey'});
+        await db.insert('publishers', {'publisher_name': 'Gramedia', 'city': 'Jakarta'});
+        await db.insert('publishers', {'publisher_name': 'Bloomsbury', 'city': 'London'});
+
+        // Authors
         await db.insert('authors', {'name': 'Andrea Hirata', 'country': 'Indonesia'});
         await db.insert('authors', {'name': 'Robert C. Martin', 'country': 'USA'});
+        await db.insert('authors', {'name': 'J.K. Rowling', 'country': 'UK'});
+        await db.insert('authors', {'name': 'Harari', 'country': 'Israel'});
+        await db.insert('authors', {'name': 'James Clear', 'country': 'USA'});
 
-        await db.insert('books', {'title': 'Laskar Pelangi', 'year': 2005, 'cover_url': '', 'publisher_id': 1, 'category_id': 1});
-        await db.insert('books', {'title': 'Clean Code', 'year': 2008, 'cover_url': '', 'publisher_id': 2, 'category_id': 2});
+        // --- BOOKS ---
 
+        // 1. Laskar Pelangi
+        await db.insert('books', {'title': 'Laskar Pelangi', 'year': 2005, 'cover_url': '', 'publisher_id': 1, 'category_id': 1, 'is_wishlist': 0});
         await db.insert('book_author', {'book_id': 1, 'author_id': 1});
-        await db.insert('book_author', {'book_id': 2, 'author_id': 2});
-        
-        // Buku 1: Laskar Pelangi
         await db.insert('reading_logs', {
           'book_id': 1, 
-          'start_date': '2025-01-01', 
-          'finish_date': '2025-01-10', 
-          'rating': 5, 
-          'notes': 'Kisah yang mantap!',
-          'status': 'Read',
-        });
-        
-        // Buku 2: Bumi Manusia (Reading)
-        await db.insert('books', {'title': 'Bumi Manusia', 'year': 1980, 'cover_url': 'https://upload.wikimedia.org/wikipedia/id/5/5a/Bumi_manusia.jpg', 'category_id': 1, 'publisher_id': 2});
-        await db.insert('book_author', {'book_id': 2, 'author_id': 2});
-        await db.insert('reading_logs', {
-          'book_id': 2, 
-          'start_date': '2025-03-20', 
-          'finish_date': '', 
-          'rating': 0, 
-          'notes': 'Sedang seru-serunya...',
-          'status': 'Reading',
+          'start_date': '2025-01-01', 'finish_date': '2025-01-10', 
+          'rating': 5, 'notes': 'Kisah yang sangat menginspirasi!', 'status': 'Read',
         });
 
-        // Buku 3: Sapiens (Wishlist)
-        await db.insert('books', {'title': 'Sapiens', 'year': 2011, 'cover_url': 'https://upload.wikimedia.org/wikipedia/en/0/06/%E1%B8%A4ay_Bin_Yaq%E1%B8%8Dan.jpg', 'category_id': 3, 'publisher_id': 3});
-        await db.insert('book_author', {'book_id': 3, 'author_id': 1}); // pinjam author 1
+        // 2. Clean Code
+        await db.insert('books', {'title': 'Clean Code', 'year': 2008, 'cover_url': '', 'publisher_id': 2, 'category_id': 2, 'is_wishlist': 0});
+        await db.insert('book_author', {'book_id': 2, 'author_id': 2});
         await db.insert('reading_logs', {
-          'book_id': 3, 
-          'start_date': '', 
-          'finish_date': '', 
-          'rating': 0, 
-          'notes': 'Pengen banget baca ini pas gajian',
-          'status': 'Wishlist',
+          'book_id': 2, 'start_date': '2025-03-25', 'finish_date': '', 'rating': 0, 'notes': 'Biblenya programmer.', 'status': 'Reading',
         });
+
+        // 3. Harry Potter
+        await db.insert('books', {'title': 'Harry Potter and the Philosopher\'s Stone', 'year': 1997, 'cover_url': 'https://m.media-amazon.com/images/I/81YOuOGBDJL._AC_UF1000,1000_QL80_.jpg', 'publisher_id': 4, 'category_id': 1, 'is_wishlist': 0});
+        await db.insert('book_author', {'book_id': 3, 'author_id': 3});
+        await db.insert('reading_logs', {
+          'book_id': 3, 'start_date': '2025-02-14', 'finish_date': '2025-02-28', 'rating': 5, 'notes': 'Dunia sihir yang luar biasa.', 'status': 'Read',
+        });
+
+        // 4. Atomic Habits
+        await db.insert('books', {'title': 'Atomic Habits', 'year': 2018, 'cover_url': 'https://m.media-amazon.com/images/I/91bYsX41DVL._AC_UF1000,1000_QL80_.jpg', 'publisher_id': 3, 'category_id': 3, 'is_wishlist': 1});
+        await db.insert('book_author', {'book_id': 4, 'author_id': 5});
+
+        // 5. Sapiens (Harari)
+        await db.insert('books', {'title': 'Sapiens', 'year': 2011, 'cover_url': 'https://m.media-amazon.com/images/I/713jIoMO3UL._AC_UF1000,1000_QL80_.jpg', 'publisher_id': 3, 'category_id': 4, 'is_wishlist': 0});
+        await db.insert('book_author', {'book_id': 5, 'author_id': 4});
+        await db.insert('reading_logs', {
+          'book_id': 5, 'start_date': '2025-03-01', 'finish_date': '2025-03-20', 'rating': 4, 'notes': 'Melihat sejarah dari sudut pandang evolusi.', 'status': 'Read',
+        });
+
+        // 6. Bumi Manusia
+        await db.insert('books', {'title': 'Bumi Manusia', 'year': 1980, 'cover_url': 'https://upload.wikimedia.org/wikipedia/id/5/5a/Bumi_manusia.jpg', 'publisher_id': 1, 'category_id': 1, 'is_wishlist': 0});
+        await db.insert('book_author', {'book_id': 6, 'author_id': 1});
+
+        // 7. Think and Grow Rich
+        await db.insert('books', {'title': 'Think and Grow Rich', 'year': 1937, 'cover_url': '', 'publisher_id': 3, 'category_id': 3, 'is_wishlist': 1});
+        await db.insert('book_author', {'book_id': 7, 'author_id': 5});
+
+        // 8. The Midnight Library
+        await db.insert('books', {'title': 'The Midnight Library', 'year': 2020, 'cover_url': '', 'publisher_id': 4, 'category_id': 1, 'is_wishlist': 1});
+        await db.insert('book_author', {'book_id': 8, 'author_id': 3});
+
+        // 9. Dune
+        await db.insert('books', {'title': 'Dune', 'year': 1965, 'cover_url': 'https://m.media-amazon.com/images/I/815m-15C0jL._AC_UF1000,1000_QL80_.jpg', 'publisher_id': 2, 'category_id': 5, 'is_wishlist': 0});
+        await db.insert('book_author', {'book_id': 9, 'author_id': 2});
+
+        // 10. Guns, Germs, and Steel
+        await db.insert('books', {'title': 'Guns, Germs, and Steel', 'year': 1997, 'cover_url': '', 'publisher_id': 3, 'category_id': 4, 'is_wishlist': 1});
+        await db.insert('book_author', {'book_id': 10, 'author_id': 4});
+
+        // 11. Zero to One
+        await db.insert('books', {'title': 'Zero to One', 'year': 2014, 'cover_url': '', 'publisher_id': 2, 'category_id': 2, 'is_wishlist': 0});
+        await db.insert('book_author', {'book_id': 11, 'author_id': 2});
+
+        // 12. The Pragmatic Programmer
+        await db.insert('books', {'title': 'The Pragmatic Programmer', 'year': 1999, 'cover_url': '', 'publisher_id': 2, 'category_id': 2, 'is_wishlist': 1});
+        await db.insert('book_author', {'book_id': 12, 'author_id': 2});
       },
     );
   }
@@ -192,7 +229,7 @@ class DbBook {
       Database db = await database;
       // GROUP_CONCAT akan menggabungkan nama dan id author kalau ada banyak.
       rawData = await db.rawQuery('''
-        SELECT b.id_book, b.title, b.year, b.cover_url, b.category_id, b.publisher_id, c.category_name, p.publisher_name, 
+        SELECT b.id_book, b.title, b.year, b.cover_url, b.category_id, b.publisher_id, b.is_wishlist, c.category_name, p.publisher_name, 
                GROUP_CONCAT(ba.author_id, ',') as author_ids, 
                GROUP_CONCAT(a.name, ', ') as author_name,
                rl.start_date, rl.finish_date, rl.rating, rl.notes, rl.status
@@ -221,7 +258,7 @@ class DbBook {
   }
 
   // --- CRUD METHODS (INSERT, UPDATE, DELETE) ---
-  Future<void> insertBook(String title, int year, String coverUrl, int categoryId, int publisherId, List<int> authorIds, {String? startDate, String? finishDate, int? rating, String? notes, String? status}) async {
+  Future<void> insertBook(String title, int year, String coverUrl, int categoryId, int publisherId, List<int> authorIds, {String? startDate, String? finishDate, int? rating, String? notes, String? status, int isWishlist = 0}) async {
     if (kIsWeb) {
       final category = _webCategories.firstWhere((c) => c['id_category'] == categoryId);
       final publisher = _webPublishers.firstWhere((p) => p['id_publisher'] == publisherId);
@@ -238,6 +275,7 @@ class DbBook {
         'publisher_name': publisher['publisher_name'],
         'author_ids': authorIds,
         'author_name': authorNames,
+        'is_wishlist': isWishlist,
       });
       return;
     }
@@ -249,6 +287,7 @@ class DbBook {
       'cover_url': coverUrl,
       'category_id': categoryId,
       'publisher_id': publisherId,
+      'is_wishlist': isWishlist,
     });
     
     // Insert Multiple Authors into relational table
@@ -267,12 +306,12 @@ class DbBook {
         'finish_date': finishDate ?? '',
         'rating': rating ?? 0,
         'notes': notes ?? '',
-        'status': status ?? 'Wishlist',
+        'status': status ?? 'Read',
       });
     }
   }
 
-  Future<void> updateBook(int bookId, String title, int year, String coverUrl, int categoryId, int publisherId, List<int> authorIds, {String? startDate, String? finishDate, int? rating, String? notes, String? status}) async {
+  Future<void> updateBook(int bookId, String title, int year, String coverUrl, int categoryId, int publisherId, List<int> authorIds, {String? startDate, String? finishDate, int? rating, String? notes, String? status, int? isWishlist}) async {
     if (kIsWeb) {
       final index = _webBooks.indexWhere((b) => b['id_book'] == bookId);
       if (index != -1) {
@@ -291,19 +330,26 @@ class DbBook {
           'publisher_name': publisher['publisher_name'],
           'author_ids': authorIds,
           'author_name': authorNames,
+          'is_wishlist': isWishlist ?? _webBooks[index]['is_wishlist'] ?? 0,
         };
       }
       return;
     }
 
     Database db = await database;
-    await db.update('books', {
+    
+    Map<String, dynamic> updateData = {
       'title': title,
       'year': year,
       'cover_url': coverUrl,
       'category_id': categoryId,
       'publisher_id': publisherId,
-    }, where: 'id_book = ?', whereArgs: [bookId]);
+    };
+    if (isWishlist != null) {
+      updateData['is_wishlist'] = isWishlist;
+    }
+    
+    await db.update('books', updateData, where: 'id_book = ?', whereArgs: [bookId]);
     // Simplifikasi update: Hapus relasi lama, buat baru
     await db.delete('book_author', where: 'book_id = ?', whereArgs: [bookId]);
     for (int aid in authorIds) {
@@ -322,9 +368,22 @@ class DbBook {
         'finish_date': finishDate ?? '',
         'rating': rating ?? 0,
         'notes': notes ?? '',
-        'status': status ?? 'Wishlist',
+        'status': status ?? 'Read',
       });
     }
+  }
+
+  Future<void> toggleWishlist(int bookId, int currentWishlistStatus) async {
+    final int newStatus = currentWishlistStatus == 1 ? 0 : 1;
+    if (kIsWeb) {
+      final index = _webBooks.indexWhere((b) => b['id_book'] == bookId);
+      if (index != -1) {
+        _webBooks[index]['is_wishlist'] = newStatus;
+      }
+      return;
+    }
+    Database db = await database;
+    await db.update('books', {'is_wishlist': newStatus}, where: 'id_book = ?', whereArgs: [bookId]);
   }
 
   Future<void> deleteBook(int bookId) async {
@@ -356,13 +415,13 @@ class DbBook {
     await db.insert('authors', {'name': name, 'country': country});
   }
 
-  Future<void> insertPublisher(String name) async {
+  Future<void> insertPublisher(String name, [String city = '-']) async {
     if (kIsWeb) {
-      _webPublishers.add({'id_publisher': _webPublishers.length + 1, 'publisher_name': name, 'city': '-'});
+      _webPublishers.add({'id_publisher': _webPublishers.length + 1, 'publisher_name': name, 'city': city});
       return;
     }
     Database db = await database;
-    await db.insert('publishers', {'publisher_name': name, 'city': '-'});
+    await db.insert('publishers', {'publisher_name': name, 'city': city});
   }
 
   Future<void> updateCategory(int id, String name) async {
