@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'blocs/book_list/book_list_bloc.dart';
 import 'blocs/book_management/book_form_bloc.dart';
-import 'screens/home/book_list_page.dart';
+import 'screens/splash/splash_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.dark,
           useMaterial3: true,
         ),
-        home: const BookListPage(),
+        home: const SplashPage(),
       ),
     );
   }
